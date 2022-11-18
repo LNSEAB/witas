@@ -1,0 +1,37 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build hello",
+			"type": "shell",
+			"command": "cargo.exe",
+			"args": ["build", "--example", "hello"],
+			"options": {
+				"shell": {
+					"executable": "pwsh.exe",
+					"args": ["-Nologo", "-c"]
+				}
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build raw_input",
+			"type": "shell",
+			"command": "cargo.exe",
+			"args": ["build", "--example", "raw_input"],
+			"options": {
+				"shell": {
+					"executable": "pwsh.exe",
+					"args": ["-Nologo", "-c"]
+				}
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build"
+		}
+	]
+}
