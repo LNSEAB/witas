@@ -15,7 +15,7 @@ pub use device::*;
 pub use events::Event;
 pub use geometry::*;
 pub use ui_thread::UiThread;
-pub use window::{EventReceiver, Window, WindowBuilder};
+pub use window::{EventReceiver, Window, WindowBuilder, WindowStyle};
 
 #[inline]
 pub fn init() {
