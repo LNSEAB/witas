@@ -314,10 +314,20 @@ unsafe fn on_size(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
 }
 
 unsafe fn on_window_pos_changed(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    let pos = (lparam.0 as *const WINDOWPOS).as_ref().unwrap();
+    if pos.flags.0 & SWP_NOMOVE.0 == 0 {
+        Context::send_event(hwnd, Event::Moved(events::Moved {
+            position: ScreenPosition::new(pos.x, pos.y),
+        }));
+    }
     DefWindowProcW(hwnd, WM_WINDOWPOSCHANGED, wparam, lparam)
 }
 
 unsafe fn on_exit_size_move(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    let size = get_client_rect(hwnd);
+    Context::send_event(hwnd, Event::Resized(events::Resized {
+        size: Size::new((size.right - size.left) as _, (size.bottom - size.top) as _),
+    }));
     DefWindowProcW(hwnd, WM_EXITSIZEMOVE, wparam, lparam)
 }
 
