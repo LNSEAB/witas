@@ -96,4 +96,9 @@ impl Context {
         let mut ctx = CONTEXT.lock().unwrap();
         ctx.get_mut(&hwnd.0).map(|obj| f(&mut obj.props));
     }
+
+    pub fn window_is_closed(hwnd: HWND) -> bool {
+        let ctx = CONTEXT.lock().unwrap();
+        ctx.contains_key(&hwnd.0)
+    }
 }

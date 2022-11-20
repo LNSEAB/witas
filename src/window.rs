@@ -3,17 +3,19 @@ use crate::*;
 use tokio::sync::{mpsc, oneshot};
 use windows::core::{HSTRING, PCWSTR};
 use windows::Win32::{
-    Foundation::{HWND, POINT},
+    Foundation::{HWND, LPARAM, POINT, WPARAM},
     Graphics::Gdi::{
         GetStockObject, MonitorFromPoint, HBRUSH, MONITOR_DEFAULTTOPRIMARY, WHITE_BRUSH,
     },
     System::LibraryLoader::GetModuleHandleW,
-    UI::HiDpi::{GetDpiForMonitor, MDT_DEFAULT},
+    UI::HiDpi::{GetDpiForMonitor, GetDpiForWindow, MDT_DEFAULT},
     UI::Shell::DragAcceptFiles,
     UI::WindowsAndMessaging::{
-        CreateWindowExW, LoadCursorW, RegisterClassExW, ShowWindow, CS_HREDRAW, CS_VREDRAW,
-        IDC_ARROW, SW_SHOW, WINDOW_EX_STYLE, WINDOW_STYLE, WNDCLASSEXW, WS_CAPTION, WS_MAXIMIZEBOX,
-        WS_MINIMIZEBOX, WS_OVERLAPPED, WS_OVERLAPPEDWINDOW, WS_POPUP, WS_SYSMENU, WS_THICKFRAME,
+        CreateWindowExW, LoadCursorW, PostMessageW, RegisterClassExW, ShowWindow, ShowWindowAsync,
+        CS_HREDRAW, CS_VREDRAW, IDC_ARROW, SW_HIDE, SW_MINIMIZE, SW_RESTORE, SW_SHOW,
+        SW_SHOWMAXIMIZED, WINDOW_EX_STYLE, WINDOW_STYLE, WM_CLOSE, WNDCLASSEXW, WS_CAPTION,
+        WS_MAXIMIZEBOX, WS_MINIMIZEBOX, WS_OVERLAPPED, WS_OVERLAPPEDWINDOW, WS_POPUP, WS_SYSMENU,
+        WS_THICKFRAME,
     },
 };
 
@@ -329,14 +331,12 @@ impl EventReceiver {
             rx: &mut self.rx,
         }
     }
-    
+
     #[inline]
     pub fn take_raw_input_receiver(&mut self) -> Option<RawInputEventRecevier> {
-        self.raw_input_rx.take().map(|rx| {
-            RawInputEventRecevier {
-                hwnd: self.hwnd,
-                rx,
-            }
+        self.raw_input_rx.take().map(|rx| RawInputEventRecevier {
+            hwnd: self.hwnd,
+            rx,
         })
     }
 }
@@ -479,6 +479,9 @@ impl Window {
 
     #[inline]
     pub async fn position(&self) -> Option<ScreenPosition> {
+        if self.is_closed() {
+            return None;
+        }
         let hwnd = self.hwnd;
         let (tx, rx) = oneshot::channel();
         UiThread::send_task(move || {
@@ -490,6 +493,9 @@ impl Window {
 
     #[inline]
     pub async fn inner_size(&self) -> Option<PhysicalSize<u32>> {
+        if self.is_closed() {
+            return None;
+        }
         let hwnd = self.hwnd;
         let (tx, rx) = oneshot::channel();
         UiThread::send_task(move || {
@@ -501,11 +507,79 @@ impl Window {
     }
 
     #[inline]
-    pub async fn accept_drop_files(&self, accept: bool) {
+    pub async fn dpi(&self) -> Option<u32> {
+        if self.is_closed() {
+            return None;
+        }
+        let hwnd = self.hwnd;
+        let (tx, rx) = oneshot::channel();
+        UiThread::send_task(move || unsafe {
+            let dpi = GetDpiForWindow(hwnd);
+            tx.send(dpi).unwrap_or(());
+        });
+        rx.await.ok()
+    }
+
+    #[inline]
+    pub async fn scale_factor(&self) -> Option<f32> {
+        self.dpi().await.map(|dpi| dpi as f32 / DEFAULT_DPI as f32)
+    }
+
+    #[inline]
+    pub fn show(&self) {
+        unsafe {
+            ShowWindowAsync(self.hwnd, SW_SHOW);
+        }
+    }
+
+    #[inline]
+    pub fn hide(&self) {
+        unsafe {
+            ShowWindowAsync(self.hwnd, SW_HIDE);
+        }
+    }
+
+    #[inline]
+    pub fn minimize(&self) {
+        unsafe {
+            ShowWindowAsync(self.hwnd, SW_MINIMIZE);
+        }
+    }
+
+    #[inline]
+    pub fn maximize(&self) {
+        unsafe {
+            ShowWindowAsync(self.hwnd, SW_SHOWMAXIMIZED);
+        }
+    }
+
+    #[inline]
+    pub fn restore(&self) {
+        unsafe {
+            ShowWindowAsync(self.hwnd, SW_RESTORE);
+        }
+    }
+
+    #[inline]
+    pub fn accept_drop_files(&self, accept: bool) {
         let hwnd = self.hwnd;
         UiThread::send_task(move || unsafe {
             DragAcceptFiles(hwnd, accept);
         });
+    }
+
+    #[inline]
+    pub fn close(&self) {
+        unsafe {
+            if !self.is_closed() {
+                PostMessageW(self.hwnd, WM_CLOSE, WPARAM(0), LPARAM(0));
+            }
+        }
+    }
+
+    #[inline]
+    pub fn is_closed(&self) -> bool {
+        Context::window_is_closed(self.hwnd)
     }
 
     #[inline]
