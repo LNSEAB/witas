@@ -318,6 +318,7 @@ impl<'a> std::future::Future for Recv<'a, raw_input::RawInputEvent> {
 pub struct EventReceiver {
     hwnd: HWND,
     rx: mpsc::UnboundedReceiver<Event>,
+    raw_input_rx: Option<mpsc::UnboundedReceiver<raw_input::RawInputEvent>>,
 }
 
 impl EventReceiver {
@@ -327,6 +328,16 @@ impl EventReceiver {
             hwnd: self.hwnd,
             rx: &mut self.rx,
         }
+    }
+    
+    #[inline]
+    pub fn take_raw_input_receiver(&mut self) -> Option<RawInputEventRecevier> {
+        self.raw_input_rx.take().map(|rx| {
+            RawInputEventRecevier {
+                hwnd: self.hwnd,
+                rx,
+            }
+        })
     }
 }
 
@@ -360,7 +371,7 @@ impl<Sz> std::future::Future for Build<Sz>
 where
     Sz: ToPhysical<u32, Output<u32> = PhysicalSize<u32>> + std::marker::Unpin + Send + 'static,
 {
-    type Output = anyhow::Result<(Window, EventReceiver, Option<RawInputEventRecevier>)>;
+    type Output = anyhow::Result<(Window, EventReceiver)>;
 
     fn poll(
         self: std::pin::Pin<&mut Self>,
@@ -443,12 +454,9 @@ where
                 let rx = EventReceiver {
                     hwnd: hwnd.clone(),
                     rx,
+                    raw_input_rx,
                 };
-                let raw_input_rx = raw_input_rx.map(|rx| RawInputEventRecevier {
-                    hwnd: hwnd.clone(),
-                    rx,
-                });
-                (Window { hwnd }, rx, raw_input_rx)
+                (Window { hwnd }, rx)
             })),
             Err(mpsc::error::TryRecvError::Empty) => std::task::Poll::Pending,
             Err(mpsc::error::TryRecvError::Disconnected) => {

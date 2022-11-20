@@ -1,6 +1,6 @@
 #[tokio::main]
 async fn main() {
-    let (_window, mut rx, raw_input) = witas::Window::builder()
+    let (_window, mut rx) = witas::Window::builder()
         .title("witas hello")
         .inner_size(witas::LogicalSize::new(640, 480))
         .accept_drop_files(true)
@@ -8,7 +8,7 @@ async fn main() {
         .build()
         .await
         .unwrap();
-    let mut raw_input = raw_input.unwrap();
+    let mut raw_input = rx.take_raw_input_receiver().unwrap();
     let th = tokio::spawn(async move {
         let device_list = witas::raw_input::get_device_list().unwrap();
         for device in &device_list {
