@@ -1,6 +1,6 @@
 mod context;
 mod device;
-mod events;
+pub mod events;
 mod geometry;
 pub mod ime;
 mod procedure;
@@ -12,7 +12,7 @@ mod window;
 use context::Context;
 
 pub use device::*;
-pub use events::Event;
+pub use events::{Event, ResizingEdge};
 pub use geometry::*;
 pub use ui_thread::UiThread;
 pub use window::{EventReceiver, Window, WindowBuilder, WindowStyle};

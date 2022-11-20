@@ -55,6 +55,8 @@ fn get_dpi_from_point(pt: ScreenPosition) -> u32 {
 pub(crate) struct WindowProperties {
     pub visible_ime_candidate_window: bool,
     pub imm_context: ime::ImmContext,
+    pub minimized: bool,
+    pub maximized: bool,
 }
 
 pub trait Style {
@@ -393,6 +395,8 @@ where
                 let props = WindowProperties {
                     visible_ime_candidate_window: builder.visible_ime_candidate_window,
                     imm_context: ime::ImmContext::new(hwnd),
+                    minimized: false,
+                    maximized: false,
                 };
                 if builder.enable_ime {
                     props.imm_context.enable();

@@ -12,6 +12,29 @@ pub struct Moved {
     pub position: ScreenPosition,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ResizingEdge {
+    Left,
+    Right,
+    Top,
+    Bottom,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomLRight,
+}
+
+#[derive(Debug)]
+pub struct Resizing {
+    pub size: PhysicalSize<u32>,
+    pub edge: ResizingEdge,
+}
+
+#[derive(Debug)]
+pub struct Resized {
+    pub size: PhysicalSize<u32>,
+}
+
 #[derive(Debug)]
 pub struct MouseInput {
     pub button: MouseButton,
@@ -51,6 +74,17 @@ pub struct KeyInput {
 #[derive(Debug)]
 pub struct CharInput {
     pub c: char,
+}
+
+#[derive(Debug)]
+pub struct Maximized {
+    pub size: PhysicalSize<u32>,
+}
+
+
+#[derive(Debug)]
+pub struct Restored {
+    pub size: PhysicalSize<u32>,
 }
 
 pub struct ImeStartComposition {
@@ -126,6 +160,8 @@ pub enum Event {
     Inactivated,
     Draw(Draw),
     Moved(Moved),
+    Resizing(Resizing),
+    Resized(Resized),
     MouseInput(MouseInput),
     CursorMoved(CursorMoved),
     CursorEntered(CursorEntered),
@@ -136,6 +172,9 @@ pub enum Event {
     ImeStartComposition(ImeStartComposition),
     ImeComposition(ImeComposition),
     ImeEndComposition(ImeEndComposition),
+    Minimized,
+    Maximized(Maximized),
+    Restored(Restored),
     DpiChanged(DpiChanged),
     DropFiles(DropFiles),
     Closed,

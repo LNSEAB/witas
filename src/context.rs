@@ -88,4 +88,12 @@ impl Context {
         let ctx = CONTEXT.lock().unwrap();
         ctx.get(&hwnd.0).map(|obj| f(&obj.props))
     }
+
+    pub fn set_window_property<F>(hwnd: HWND, f: F)
+    where
+        F: FnOnce(&mut WindowProperties),
+    {
+        let mut ctx = CONTEXT.lock().unwrap();
+        ctx.get_mut(&hwnd.0).map(|obj| f(&mut obj.props));
+    }
 }

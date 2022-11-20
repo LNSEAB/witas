@@ -33,8 +33,12 @@ fn get_xbutton_wparam(wp: WPARAM) -> u16 {
     ((wp.0 >> 16) & 0xffff) as _
 }
 
-fn lparam_to_point(lparam: LPARAM) -> PhysicalPosition<i32> {
-    PhysicalPosition::new(get_x_lparam(lparam) as _, get_y_lparam(lparam) as _)
+fn lparam_to_point<C>(lparam: LPARAM) -> Position<i32, C> {
+    Position::new(get_x_lparam(lparam) as _, get_y_lparam(lparam) as _)
+}
+
+fn lparam_to_size(lparam: LPARAM) -> PhysicalSize<u32> {
+    Size::new(get_x_lparam(lparam) as _, get_y_lparam(lparam) as _)
 }
 
 fn wparam_to_button(wparam: WPARAM) -> MouseButton {
@@ -244,6 +248,79 @@ unsafe fn on_ime_end_composition(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> 
     DefWindowProcW(hwnd, WM_IME_ENDCOMPOSITION, wparam, lparam)
 }
 
+unsafe fn on_sizing(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    let d = {
+        let wrc = get_window_rect(hwnd);
+        let crc = get_client_rect(hwnd);
+        PhysicalSize::new(
+            (wrc.right - wrc.left) - (crc.right - crc.left),
+            (wrc.bottom - wrc.top) - (crc.bottom - crc.top),
+        )
+    };
+    let rc = (lparam.0 as *mut RECT).as_mut().unwrap();
+    let size = PhysicalSize::new(
+        (rc.right - rc.left - d.width) as u32,
+        (rc.bottom - rc.left - d.height) as u32,
+    );
+    let edge = match wparam.0 as u32 {
+        WMSZ_LEFT => ResizingEdge::Left,
+        WMSZ_RIGHT => ResizingEdge::Right,
+        WMSZ_TOP => ResizingEdge::Top,
+        WMSZ_BOTTOM => ResizingEdge::Bottom,
+        WMSZ_TOPLEFT => ResizingEdge::TopLeft,
+        WMSZ_TOPRIGHT => ResizingEdge::TopRight,
+        WMSZ_BOTTOMLEFT => ResizingEdge::BottomLeft,
+        WMSZ_BOTTOMRIGHT => ResizingEdge::BottomLRight,
+        _ => unreachable!(),
+    };
+    Context::send_event(hwnd, Event::Resizing(events::Resizing {
+        size,
+        edge,
+    }));
+    DefWindowProcW(hwnd, WM_SIZING, wparam, lparam)
+}
+
+unsafe fn on_size(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    match wparam.0 as u32 {
+        SIZE_MINIMIZED => {
+            Context::send_event(hwnd, Event::Minimized);
+            Context::set_window_property(hwnd, |props| props.minimized = true);
+        }
+        SIZE_MAXIMIZED => {
+            let size = lparam_to_size(lparam);
+            Context::send_event(hwnd, Event::Maximized(events::Maximized {
+                size,
+            }));
+            Context::set_window_property(hwnd, |props| props.maximized = true);
+        }
+        SIZE_RESTORED => {
+            let min_or_max = Context::get_window_property(hwnd, |props| {
+                props.minimized | props.maximized
+            });
+            if min_or_max.unwrap_or(false) {
+                let size = lparam_to_size(lparam);
+                Context::send_event(hwnd, Event::Restored(events::Restored {
+                    size,
+                }));
+                Context::set_window_property(hwnd, |props| {
+                    props.minimized = false;
+                    props.maximized = false;
+                });
+            }
+        }
+        _ => {}
+    }
+    LRESULT(0)
+}
+
+unsafe fn on_window_pos_changed(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    DefWindowProcW(hwnd, WM_WINDOWPOSCHANGED, wparam, lparam)
+}
+
+unsafe fn on_exit_size_move(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    DefWindowProcW(hwnd, WM_EXITSIZEMOVE, wparam, lparam)
+}
+
 unsafe fn on_dpi_changed(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     let rc = *(lparam.0 as *const RECT);
     SetWindowPos(
@@ -410,6 +487,10 @@ pub(crate) extern "system" fn window_proc(
             WM_IME_STARTCOMPOSITION => on_ime_start_composition(hwnd, wparam, lparam),
             WM_IME_COMPOSITION => on_ime_composition(hwnd, wparam, lparam),
             WM_IME_ENDCOMPOSITION => on_ime_end_composition(hwnd, wparam, lparam),
+            WM_SIZING => on_sizing(hwnd, wparam, lparam),
+            WM_SIZE => on_size(hwnd, wparam, lparam),
+            WM_WINDOWPOSCHANGED => on_window_pos_changed(hwnd, wparam, lparam),
+            WM_EXITSIZEMOVE => on_exit_size_move(hwnd, wparam, lparam),
             WM_DPICHANGED => on_dpi_changed(hwnd, wparam, lparam),
             WM_GETDPISCALEDSIZE => on_get_dpi_scaled_size(hwnd, wparam, lparam),
             WM_DROPFILES => on_drop_files(hwnd, wparam, lparam),
