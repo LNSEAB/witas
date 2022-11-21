@@ -1,5 +1,6 @@
 use crate::window::WindowProperties;
 use crate::*;
+use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::task::Waker;
@@ -14,15 +15,25 @@ pub(crate) struct Object {
     pub raw_input_waker: Option<Waker>,
 }
 
-static CONTEXT: once_cell::sync::Lazy<Mutex<HashMap<isize, Object>>> =
-    once_cell::sync::Lazy::new(|| Mutex::new(HashMap::new()));
+pub(crate) struct Context {
+    window_map: HashMap<isize, Object>,
+    ui_thread_unwind: Option<Box<dyn Any + Send>>,
+}
 
-pub(crate) struct Context;
+static CONTEXT: once_cell::sync::Lazy<Mutex<Context>> =
+    once_cell::sync::Lazy::new(|| Mutex::new(Context::new()));
 
 impl Context {
+    fn new() -> Self {
+        Self {
+            window_map: HashMap::new(),
+            ui_thread_unwind: None,
+        }
+    }
+
     pub fn is_empty() -> bool {
         let ctx = CONTEXT.lock().unwrap();
-        ctx.is_empty()
+        ctx.window_map.is_empty()
     }
 
     pub fn register_window(
@@ -32,7 +43,7 @@ impl Context {
         raw_input_sender: Option<mpsc::UnboundedSender<raw_input::RawInputEvent>>,
     ) {
         let mut ctx = CONTEXT.lock().unwrap();
-        ctx.insert(
+        ctx.window_map.insert(
             hwnd.0,
             Object {
                 props,
@@ -46,7 +57,7 @@ impl Context {
 
     pub fn send_event(hwnd: HWND, event: Event) {
         let mut ctx = CONTEXT.lock().unwrap();
-        let Some(obj) = ctx.get_mut(&hwnd.0) else { return };
+        let Some(obj) = ctx.window_map.get_mut(&hwnd.0) else { return };
         obj.sender.send(event).unwrap_or(());
         if let Some(waker) = obj.waker.take() {
             waker.wake();
@@ -55,7 +66,7 @@ impl Context {
 
     pub fn send_raw_input_event(hwnd: HWND, event: raw_input::RawInputEvent) {
         let mut ctx = CONTEXT.lock().unwrap();
-        let Some(obj) = ctx.get_mut(&hwnd.0) else { return };
+        let Some(obj) = ctx.window_map.get_mut(&hwnd.0) else { return };
         if let Some(sender) = obj.raw_input_sender.as_ref() {
             sender.send(event).unwrap_or(());
         }
@@ -64,20 +75,30 @@ impl Context {
         }
     }
 
+    pub fn quit() {
+        let mut ctx = CONTEXT.lock().unwrap();
+        for (_, obj) in ctx.window_map.iter_mut() {
+            obj.sender.send(Event::Quit).unwrap_or(());
+            if let Some(waker) = obj.waker.take() {
+                waker.wake();
+            }
+        }
+    }
+
     pub fn remove_window(hwnd: HWND) -> Option<Object> {
         let mut ctx = CONTEXT.lock().unwrap();
-        ctx.remove(&hwnd.0)
+        ctx.window_map.remove(&hwnd.0)
     }
 
     pub fn set_waker(hwnd: HWND, waker: Waker) {
         let mut ctx = CONTEXT.lock().unwrap();
-        let Some(mut obj) = ctx.get_mut(&hwnd.0) else { return };
+        let Some(mut obj) = ctx.window_map.get_mut(&hwnd.0) else { return };
         obj.waker = Some(waker);
     }
 
     pub fn set_raw_input_waker(hwnd: HWND, waker: Waker) {
         let mut ctx = CONTEXT.lock().unwrap();
-        let Some(mut obj) = ctx.get_mut(&hwnd.0) else { return };
+        let Some(mut obj) = ctx.window_map.get_mut(&hwnd.0) else { return };
         obj.raw_input_waker = Some(waker);
     }
 
@@ -86,7 +107,7 @@ impl Context {
         F: FnOnce(&WindowProperties) -> T,
     {
         let ctx = CONTEXT.lock().unwrap();
-        ctx.get(&hwnd.0).map(|obj| f(&obj.props))
+        ctx.window_map.get(&hwnd.0).map(|obj| f(&obj.props))
     }
 
     pub fn set_window_property<F>(hwnd: HWND, f: F)
@@ -94,13 +115,23 @@ impl Context {
         F: FnOnce(&mut WindowProperties),
     {
         let mut ctx = CONTEXT.lock().unwrap();
-        if let Some(obj) = ctx.get_mut(&hwnd.0) {
+        if let Some(obj) = ctx.window_map.get_mut(&hwnd.0) {
             f(&mut obj.props);
         }
     }
 
     pub fn window_is_closed(hwnd: HWND) -> bool {
         let ctx = CONTEXT.lock().unwrap();
-        ctx.contains_key(&hwnd.0)
+        ctx.window_map.contains_key(&hwnd.0)
+    }
+
+    pub fn set_ui_thread_unwind(payload: Box<dyn Any + Send>) {
+        let mut ctx = CONTEXT.lock().unwrap();
+        ctx.ui_thread_unwind = Some(payload);
+    }
+
+    pub fn get_ui_thread_unwind() -> Option<Box<dyn Any + Send>> {
+        let mut ctx = CONTEXT.lock().unwrap();
+        ctx.ui_thread_unwind.take()
     }
 }

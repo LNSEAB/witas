@@ -1,6 +1,5 @@
 use crate::*;
 use once_cell::sync::OnceCell;
-use std::any::Any;
 use std::os::windows::prelude::*;
 use std::sync::{mpsc, Arc, Mutex};
 use windows::Win32::{
@@ -33,23 +32,18 @@ pub(crate) const WM_SEND_TASK: u32 = WM_USER + 1;
 
 struct Task(Box<dyn FnOnce() + Send>);
 
-struct JoinData {
-    payload: Option<Box<dyn Any + Send>>,
-    waker: std::task::Waker,
-}
-
 struct Thread {
     th: Option<std::thread::JoinHandle<()>>,
     tx_task: mpsc::Sender<Task>,
-    join_data: Arc<Mutex<Option<JoinData>>>,
+    join_waker: Arc<Mutex<Option<std::task::Waker>>>,
 }
 
 impl Thread {
     fn new() -> Self {
         let (tx, rx) = mpsc::channel::<Task>();
         let (tmp_tx, tmp_rx) = mpsc::channel::<()>();
-        let join_data = Arc::new(Mutex::new(Option::<JoinData>::None));
-        let th_join_data = join_data.clone();
+        let join_waker = Arc::new(Mutex::new(Option::<std::task::Waker>::None));
+        let th_join_waker = join_waker.clone();
         let th = std::thread::spawn(move || unsafe {
             #[cfg(feature = "coinit")]
             let _coinit =
@@ -60,15 +54,22 @@ impl Thread {
                 tmp_tx.send(()).unwrap_or(());
             }
             let mut msg = MSG::default();
-            let ret = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| loop {
+            loop {
                 let ret = GetMessageW(&mut msg, HWND(0), 0, 0);
                 if ret == BOOL(0) || ret == BOOL(-1) {
                     break;
                 }
                 match msg.message {
                     WM_SEND_TASK => {
-                        if let Ok(task) = rx.recv() {
-                            task.0();
+                        let ret = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                            if let Ok(task) = rx.recv() {
+                                task.0();
+                            }
+                        }));
+                        if let Err(e) = ret {
+                            Context::set_ui_thread_unwind(e);
+                            Context::quit();
+                            break;
                         }
                     }
                     _ => {
@@ -77,22 +78,21 @@ impl Thread {
                     }
                 }
                 if let Some(e) = procedure::get_unwind() {
-                    std::panic::resume_unwind(e);
+                    Context::set_ui_thread_unwind(e);
+                    Context::quit();
+                    break;
                 }
-            }));
-            let mut join_data = th_join_data.lock().unwrap();
-            if let Some(mut join_data) = join_data.take() {
-                if let Err(e) = ret {
-                    join_data.payload = Some(e);
-                }
-                join_data.waker.wake();
+            }
+            let mut join_waker = th_join_waker.lock().unwrap();
+            if let Some(waker) = join_waker.take() {
+                waker.wake();
             }
         });
         tmp_rx.recv().unwrap_or(());
         Self {
             th: Some(th),
             tx_task: tx,
-            join_data,
+            join_waker,
         }
     }
 
@@ -122,15 +122,16 @@ impl std::future::Future for JoinHandle {
     ) -> std::task::Poll<Self::Output> {
         let t = THREAD.get().unwrap().lock().unwrap();
         let Some(th) = t.th.as_ref() else { return std::task::Poll::Ready(Ok(())) };
-        let mut join_data = t.join_data.lock().unwrap();
+        let mut join_waker = t.join_waker.lock().unwrap();
         if th.is_finished() {
-            let Some(mut join_data) = join_data.take() else { return std::task::Poll::Ready(Ok(())) };
-            std::task::Poll::Ready(join_data.payload.take().map(Err).unwrap_or(Ok(())))
+            std::task::Poll::Ready(
+                Context::get_ui_thread_unwind()
+                    .take()
+                    .map(Err)
+                    .unwrap_or(Ok(())),
+            )
         } else {
-            *join_data = Some(JoinData {
-                payload: None,
-                waker: cx.waker().clone(),
-            });
+            *join_waker = Some(cx.waker().clone());
             std::task::Poll::Pending
         }
     }
