@@ -27,13 +27,10 @@ async fn main() {
         }
     });
     loop {
-        tokio::select! {
-            event = rx.recv() => {
-                println!("{:?}", event);
-                if let witas::Event::Quit = event {
-                    break;
-                }
-            }
+        let event = rx.recv().await;
+        println!("{:?}", event);
+        if let witas::Event::Quit = event {
+            break;
         }
     }
     th.await.unwrap();

@@ -14,13 +14,10 @@ async fn main() {
         .await
         .unwrap();
     loop {
-        tokio::select! {
-            event = rx.recv() => {
-                println!("{:?}", event);
-                if let witas::Event::Quit = event {
-                    break;
-                }
-            }
+        let event = rx.recv().await; 
+        println!("{:?}", event);
+        if let witas::Event::Quit = event {
+            break;
         }
     }
     if let Err(e) = witas::UiThread::join().await {
