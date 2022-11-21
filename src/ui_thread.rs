@@ -123,6 +123,7 @@ impl std::future::Future for JoinHandle {
         let t = THREAD.get().unwrap().lock().unwrap();
         let Some(th) = t.th.as_ref() else { return std::task::Poll::Ready(Ok(())) };
         let mut join_waker = t.join_waker.lock().unwrap();
+        assert!(join_waker.is_none());
         if th.is_finished() {
             std::task::Poll::Ready(
                 Context::get_ui_thread_unwind()
