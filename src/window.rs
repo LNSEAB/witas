@@ -584,15 +584,18 @@ impl Window {
     }
 
     #[inline]
-    pub fn redraw<T, Coord>(&self, invalid_rect: Option<T>)
+    pub fn redraw<T, Coord>(&self, invalid_rect: Option<Rect<T, Coord>>)
     where
-        T: ToPhysical<i32> + Send + 'static,
-        T::Output<i32>: Into<RECT>,
+        T: num::NumCast + Send + 'static,
+        Coord: Send + 'static,
+        Rect<T, Coord>: ToPhysical<T, Output<T> = PhysicalRect<T>>,
     {
         let hwnd = self.hwnd;
         UiThread::send_task(move || unsafe {
-            let dpi = GetDpiForWindow(hwnd);
-            let rc: Option<RECT> = invalid_rect.map(|rc| rc.to_physical(dpi as i32).into());
+            let Some(dpi) = num::cast::cast(GetDpiForWindow(hwnd)) else { return };
+            let rc: Option<RECT> = invalid_rect
+                .and_then(|rc| rc.to_physical(dpi).cast::<i32>())
+                .map(|rc| rc.into());
             let p = rc.as_ref().map(|p| p as *const _);
             RedrawWindow(hwnd, p, None, RDW_INVALIDATE);
         });
