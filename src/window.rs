@@ -418,8 +418,8 @@ where
                 let (event_rx, raw_input_event_rx) = {
                     let (event_tx, event_rx) = mpsc::unbounded_channel();
                     let raw_input_event_rx = if builder.enable_raw_input {
-                        if let Ok(_) =
-                            raw_input::register_devices(hwnd, raw_input::WindowState::Foreground)
+                        if raw_input::register_devices(hwnd, raw_input::WindowState::Foreground)
+                            .is_ok()
                         {
                             let (raw_input_event_tx, raw_input_event_rx) =
                                 mpsc::unbounded_channel();
@@ -453,7 +453,7 @@ where
         match this.rx.as_mut().unwrap().try_recv() {
             Ok(ret) => std::task::Poll::Ready(ret.map(|(hwnd, rx, raw_input_rx)| {
                 let rx = EventReceiver {
-                    hwnd: hwnd.clone(),
+                    hwnd,
                     rx,
                     raw_input_rx,
                 };

@@ -125,7 +125,7 @@ impl std::future::Future for JoinHandle {
         let mut join_data = t.join_data.lock().unwrap();
         if th.is_finished() {
             let Some(mut join_data) = join_data.take() else { return std::task::Poll::Ready(Ok(())) };
-            std::task::Poll::Ready(join_data.payload.take().map(|p| Err(p)).unwrap_or(Ok(())))
+            std::task::Poll::Ready(join_data.payload.take().map(Err).unwrap_or(Ok(())))
         } else {
             *join_data = Some(JoinData {
                 payload: None,

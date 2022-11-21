@@ -94,7 +94,9 @@ impl Context {
         F: FnOnce(&mut WindowProperties),
     {
         let mut ctx = CONTEXT.lock().unwrap();
-        ctx.get_mut(&hwnd.0).map(|obj| f(&mut obj.props));
+        if let Some(obj) = ctx.get_mut(&hwnd.0) {
+            f(&mut obj.props);
+        }
     }
 
     pub fn window_is_closed(hwnd: HWND) -> bool {

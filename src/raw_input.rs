@@ -440,8 +440,10 @@ unsafe fn get_device_info(handle: HANDLE) -> windows::core::Result<DeviceInfo> {
                 0
             };
             let value_caps = get_value_caps(&preparsed, caps.NumberInputValueCaps)?;
-            let mut info = GamePadInfo::default();
-            info.button_num = button_num;
+            let mut info = GamePadInfo {
+                button_num,
+                ..Default::default()
+            };
             for caps in &value_caps {
                 let usage = if !caps.IsRange.as_bool() {
                     caps.Anonymous.NotRange.Usage
@@ -467,7 +469,7 @@ unsafe fn get_device_info(handle: HANDLE) -> windows::core::Result<DeviceInfo> {
                 } else {
                     Limit {
                         min: caps.LogicalMin as _,
-                        max: caps.LogicalMax as _, 
+                        max: caps.LogicalMax as _,
                     }
                 };
                 match usage {
@@ -562,9 +564,11 @@ thread_local! {
 
 pub(crate) fn register_devices(hwnd: HWND, state: WindowState) -> windows::core::Result<()> {
     let flags = RIDEV_DEVNOTIFY
-        | (state == WindowState::Background)
-            .then_some(RIDEV_INPUTSINK)
-            .unwrap_or(RAWINPUTDEVICE_FLAGS(0));
+        | if state == WindowState::Background {
+            RIDEV_INPUTSINK
+        } else {
+            RAWINPUTDEVICE_FLAGS(0)
+        };
     let devices = [
         RAWINPUTDEVICE {
             usUsagePage: HID_USAGE_PAGE_GENERIC,
@@ -668,7 +672,7 @@ unsafe fn input_gamepad_data(input: &mut RAWINPUT) -> windows::core::Result<Inpu
         get_preparsed_data(handle, preparsed)?;
         let mut data = GamePadData::new(handle);
         let mut len = gamepad.usage.len() as _;
-        let mut report =
+        let report =
             std::slice::from_raw_parts_mut(hid.bRawData.as_mut_ptr() as _, hid.dwSizeHid as _);
         HidP_GetUsages(
             HidP_Input,
@@ -677,7 +681,7 @@ unsafe fn input_gamepad_data(input: &mut RAWINPUT) -> windows::core::Result<Inpu
             gamepad.usage.as_mut_ptr(),
             &mut len,
             preparsed.as_ptr() as _,
-            &mut report,
+            report,
         )?;
         let range = if gamepad.button_caps[0].IsRange.as_bool() {
             gamepad.button_caps[0].Anonymous.Range.UsageMin
@@ -696,7 +700,7 @@ unsafe fn input_gamepad_data(input: &mut RAWINPUT) -> windows::core::Result<Inpu
             let mut value = 0;
             let report =
                 std::slice::from_raw_parts_mut(hid.bRawData.as_ptr() as _, hid.dwSizeHid as _);
-            let ret = HidP_GetUsageValue(HidP_Input, caps.UsagePage, 0, usage, &mut value, preparsed.as_ptr() as _, &report);
+            let ret = HidP_GetUsageValue(HidP_Input, caps.UsagePage, 0, usage, &mut value, preparsed.as_ptr() as _, report);
             if ret.is_err() {
                 continue;
             }

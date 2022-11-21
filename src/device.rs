@@ -23,7 +23,7 @@ pub enum MouseButton {
 impl MouseButton {
     const EX_LEN: u32 = 29;
 
-    fn to_u32(&self) -> u32 {
+    fn as_u32(&self) -> u32 {
         match self {
             Self::Left => 0x01,
             Self::Right => 0x01 << 1,
@@ -56,7 +56,7 @@ impl MouseButtons {
 
     #[inline]
     pub fn contains(&self, btn: MouseButton) -> bool {
-        let btn = btn.to_u32();
+        let btn = btn.as_u32();
         self.0 & btn == btn
     }
 }
@@ -66,7 +66,7 @@ impl std::ops::BitOr for MouseButton {
 
     #[inline]
     fn bitor(self, rhs: Self) -> Self::Output {
-        MouseButtons(self.to_u32() | rhs.to_u32())
+        MouseButtons(self.as_u32() | rhs.as_u32())
     }
 }
 
@@ -101,6 +101,13 @@ impl std::fmt::Display for MouseButtons {
             }
         }
         write!(f, "{}", v.join(" | "))
+    }
+}
+
+impl Default for MouseButtons {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
     }
 }
 

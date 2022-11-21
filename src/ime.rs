@@ -103,8 +103,7 @@ impl Imc {
                 return None;
             }
             let len = byte_len as usize / std::mem::size_of::<u16>();
-            let mut buf = Vec::with_capacity(len);
-            buf.resize(len, 0);
+            let mut buf = vec![0; len];
             ImmGetCompositionStringW(
                 self.himc,
                 GCS_COMPSTR,
@@ -122,8 +121,7 @@ impl Imc {
             if byte_len == IMM_ERROR_NODATA || byte_len == IMM_ERROR_GENERAL {
                 return None;
             }
-            let mut buf = Vec::<u8>::with_capacity(byte_len as _);
-            buf.resize(byte_len as _, 0);
+            let mut buf = vec![0u8; byte_len as _];
             ImmGetCompositionStringW(
                 self.himc,
                 GCS_COMPATTR,
@@ -139,8 +137,7 @@ impl Imc {
             if byte_len == IMM_ERROR_NODATA || byte_len == IMM_ERROR_GENERAL {
                 return None;
             }
-            let mut buf = Vec::<u8>::with_capacity(byte_len as _);
-            buf.resize(byte_len as _, 0);
+            let mut buf = vec![0u8; byte_len as _];
             ImmGetCompositionStringW(
                 self.himc,
                 GCS_COMPCLAUSE,
@@ -173,8 +170,7 @@ impl Imc {
                 return None;
             }
             let len = byte_len as usize / std::mem::size_of::<u16>();
-            let mut buf = Vec::with_capacity(len);
-            buf.resize(len, 0);
+            let mut buf = vec![0; len];
             ImmGetCompositionStringW(
                 self.himc,
                 GCS_RESULTSTR,
