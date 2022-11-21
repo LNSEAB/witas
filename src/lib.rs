@@ -12,6 +12,7 @@ mod window;
 use context::Context;
 
 pub use device::*;
+#[doc(inline)]
 pub use events::{Event, ResizingEdge};
 pub use geometry::*;
 pub use ui_thread::UiThread;

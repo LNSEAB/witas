@@ -331,6 +331,16 @@ unsafe fn on_exit_size_move(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESU
     DefWindowProcW(hwnd, WM_EXITSIZEMOVE, wparam, lparam)
 }
 
+unsafe fn on_activate(hwnd: HWND, wparam: WPARAM, _lparam: LPARAM) -> LRESULT {
+    let active = (wparam.0 as u32 & (WA_ACTIVE | WA_CLICKACTIVE)) != 0;
+    if active {
+        Context::send_event(hwnd, Event::Activated);
+    } else {
+        Context::send_event(hwnd, Event::Inactivated);
+    }
+    LRESULT(0)
+}
+
 unsafe fn on_dpi_changed(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     let rc = *(lparam.0 as *const RECT);
     SetWindowPos(
@@ -501,6 +511,7 @@ pub(crate) extern "system" fn window_proc(
             WM_SIZE => on_size(hwnd, wparam, lparam),
             WM_WINDOWPOSCHANGED => on_window_pos_changed(hwnd, wparam, lparam),
             WM_EXITSIZEMOVE => on_exit_size_move(hwnd, wparam, lparam),
+            WM_ACTIVATE => on_activate(hwnd, wparam, lparam),
             WM_DPICHANGED => on_dpi_changed(hwnd, wparam, lparam),
             WM_GETDPISCALEDSIZE => on_get_dpi_scaled_size(hwnd, wparam, lparam),
             WM_DROPFILES => on_drop_files(hwnd, wparam, lparam),
