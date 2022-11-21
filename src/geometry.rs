@@ -144,6 +144,22 @@ where
     }
 }
 
+impl<T, Coord> Rect<T, Coord>
+where
+    T: num::NumCast
+{
+    #[inline]
+    pub fn cast<U>(self) -> Option<Rect<U, Coord>> 
+    where
+        U: num::NumCast
+    {
+        Some(Rect::new(
+            self.position.cast::<U>()?,
+            self.size.cast::<U>()?,
+        ))
+    }
+}
+
 pub const DEFAULT_DPI: u32 = 96;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -193,7 +209,7 @@ where
 
     #[inline]
     fn to_logical(&self, _dpi: T) -> Self::Output<T> {
-        Position::new(self.x, self.y)
+        *self
     }
 }
 
@@ -217,7 +233,7 @@ where
 
     #[inline]
     fn to_logical(&self, _dpi: T) -> Self::Output<T> {
-        Size::new(self.width, self.height)
+        *self
     }
 }
 
@@ -232,6 +248,33 @@ where
         Size::new(
             to_logical_value(self.width, dpi),
             to_logical_value(self.height, dpi),
+        )
+    }
+}
+
+impl<T> ToLogical<T> for LogicalRect<T> 
+where
+    T: Copy
+{
+    type Output<U> = LogicalRect<U>;
+
+    #[inline]
+    fn to_logical(&self, _dpi: T) -> Self::Output<T> {
+        *self
+    }
+}
+
+impl<T> ToLogical<T> for PhysicalRect<T>
+where
+    T: num::Num + num::NumCast + Copy
+{
+    type Output<U> = LogicalRect<T>;
+
+    #[inline]
+    fn to_logical(&self, dpi: T) -> Self::Output<T> {
+        Rect::new(
+            self.position.to_logical(dpi),
+            self.size.to_logical(dpi),
         )
     }
 }
@@ -265,7 +308,7 @@ where
 
     #[inline]
     fn to_physical(&self, _dpi: T) -> Self::Output<T> {
-        Position::new(self.x, self.y)
+        *self
     }
 }
 
@@ -292,7 +335,34 @@ where
 
     #[inline]
     fn to_physical(&self, _dpi: T) -> Self::Output<T> {
-        Size::new(self.width, self.height)
+        *self
+    }
+}
+
+impl<T> ToPhysical<T> for LogicalRect<T>
+where
+    T: num::Num + num::NumCast + Copy
+{
+    type Output<U> = PhysicalRect<U>;
+
+    #[inline]
+    fn to_physical(&self, dpi: T) -> Self::Output<T> {
+        Rect::new(
+            self.position.to_physical(dpi),
+            self.size.to_physical(dpi),
+        )
+    }
+}
+
+impl<T> ToPhysical<T> for PhysicalRect<T> 
+where
+    T: Copy
+{
+    type Output<U> = PhysicalRect<U>;
+
+    #[inline]
+    fn to_physical(&self, _dpi: T) -> Self::Output<T> {
+        *self
     }
 }
 
@@ -303,10 +373,23 @@ impl From<POINT> for PhysicalPosition<i32> {
     }
 }
 
-impl From<RECT> for Rect<i32, Physical> {
+impl From<RECT> for PhysicalRect<i32> {
     #[inline]
     fn from(src: RECT) -> Self {
         Self::from_positions((src.left, src.top), (src.right, src.bottom))
+    }
+}
+
+impl From<PhysicalRect<i32>> for RECT {
+    #[inline]
+    fn from(src: PhysicalRect<i32>) -> Self {
+        let rb = src.endpoint();
+        RECT {
+            left: src.position.x,
+            top: src.position.y,
+            right: rb.x,
+            bottom: rb.y,
+        }
     }
 }
 
@@ -376,5 +459,39 @@ mod tests {
         let dest = src.to_physical(DEFAULT_DPI * 2);
         assert!(src.width == dest.width);
         assert!(src.height == dest.height);
+    }
+
+    #[test]
+    fn logical_to_logical_rect() {
+        let src = LogicalRect::new((2, 4), (100, 200));
+        let dest = src.to_logical(DEFAULT_DPI * 2);
+        assert!(src == dest)
+    }
+
+    #[test]
+    fn logical_to_physical_rect() {
+        let src = LogicalRect::new((2, 4), (100, 200));
+        let dest = src.to_physical(DEFAULT_DPI * 2);
+        assert!(src.position.x * 2 == dest.position.x);
+        assert!(src.position.y * 2 == dest.position.y);
+        assert!(src.size.width * 2 == dest.size.width);
+        assert!(src.size.height * 2 == dest.size.height);
+    }
+
+    #[test]
+    fn physical_to_logical_rect() {
+        let src = PhysicalRect::new((2, 4), (100, 200));
+        let dest = src.to_logical(DEFAULT_DPI * 2);
+        assert!(src.position.x == dest.position.x * 2);
+        assert!(src.position.y == dest.position.y * 2);
+        assert!(src.size.width == dest.size.width * 2);
+        assert!(src.size.height == dest.size.height * 2);
+    }
+
+    #[test]
+    fn phsyical_to_physical_rect() {
+        let src = PhysicalRect::new((2, 4), (100, 200));
+        let dest = src.to_physical(DEFAULT_DPI * 2);
+        assert!(src == dest)
     }
 }

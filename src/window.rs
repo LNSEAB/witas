@@ -3,9 +3,10 @@ use crate::*;
 use tokio::sync::{mpsc, oneshot};
 use windows::core::{HSTRING, PCWSTR};
 use windows::Win32::{
-    Foundation::{HWND, LPARAM, POINT, WPARAM},
+    Foundation::{HWND, LPARAM, POINT, RECT, WPARAM},
     Graphics::Gdi::{
-        GetStockObject, MonitorFromPoint, HBRUSH, MONITOR_DEFAULTTOPRIMARY, WHITE_BRUSH,
+        GetStockObject, MonitorFromPoint, RedrawWindow, HBRUSH, MONITOR_DEFAULTTOPRIMARY,
+        RDW_INVALIDATE, WHITE_BRUSH,
     },
     System::LibraryLoader::GetModuleHandleW,
     UI::HiDpi::{GetDpiForMonitor, GetDpiForWindow, MDT_DEFAULT},
@@ -580,6 +581,21 @@ impl Window {
     #[inline]
     pub fn is_closed(&self) -> bool {
         Context::window_is_closed(self.hwnd)
+    }
+
+    #[inline]
+    pub fn redraw<T, Coord>(&self, invalid_rect: Option<T>)
+    where
+        T: ToPhysical<i32> + Send + 'static,
+        T::Output<i32>: Into<RECT>,
+    {
+        let hwnd = self.hwnd;
+        UiThread::send_task(move || unsafe {
+            let dpi = GetDpiForWindow(hwnd);
+            let rc: Option<RECT> = invalid_rect.map(|rc| rc.to_physical(dpi as i32).into());
+            let p = rc.as_ref().map(|p| p as *const _);
+            RedrawWindow(hwnd, p, None, RDW_INVALIDATE);
+        });
     }
 
     #[inline]
