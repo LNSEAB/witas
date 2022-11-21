@@ -1,7 +1,7 @@
 #[tokio::main]
 async fn main() {
     let (_window, mut rx) = witas::Window::builder()
-        .title("witas hello")
+        .title("witas raw_input")
         .inner_size(witas::LogicalSize::new(640, 480))
         .enable_raw_input(true)
         .build()
