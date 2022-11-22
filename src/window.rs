@@ -236,7 +236,7 @@ impl<Title, Sz> WindowBuilder<Title, Sz> {
     }
 
     #[inline]
-    pub fn enable_ime(mut self, enable: bool) -> Self {
+    pub fn ime(mut self, enable: bool) -> Self {
         self.enable_ime = enable;
         self
     }
@@ -566,6 +566,20 @@ impl Window {
         let hwnd = self.hwnd;
         UiThread::send_task(move || unsafe {
             DragAcceptFiles(hwnd, accept);
+        });
+    }
+
+    #[inline]
+    pub fn ime(&self, enable: bool) {
+        let hwnd = self.hwnd;
+        UiThread::send_task(move || {
+            Context::set_window_property(hwnd, |props| {
+                if enable {
+                    props.imm_context.enable();
+                } else {
+                    props.imm_context.disable();
+                }
+            });
         });
     }
 
