@@ -1,5 +1,8 @@
 # witas
 
+[![wita at crates.io](https://img.shields.io/crates/v/witas.svg)](https://crates.io/crates/witas)
+[![wita at docs.rs](https://docs.rs/witas/badge.svg)](https://docs.rs/witas)
+
 An asynchronous window library in Rust for Windows 
 
 ## The simple example
