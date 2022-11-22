@@ -469,3 +469,20 @@ pub async fn get_key_state(k: VirtualKey) -> bool {
     });
     rx.await.unwrap_or(false)
 }
+
+#[inline]
+pub async fn get_keyboard_state(mut keys: Vec<VirtualKey>) -> Vec<VirtualKey> {
+    let (tx, rx) = oneshot::channel();
+    UiThread::send_task(move || unsafe {
+        let mut buffer = [0; 256];
+        GetKeyboardState(&mut buffer);
+        keys.clear();
+        for (i, k) in buffer.iter().enumerate() {
+            if (k & 0x80) != 0 {
+                keys.push(as_virtual_key(VIRTUAL_KEY(i as _)));
+            }
+        }
+        tx.send(keys).unwrap_or(());
+    });
+    rx.await.unwrap_or_else(|_| vec![])
+}
