@@ -18,10 +18,10 @@ async fn main() {
             match raw_input.recv().await {
                 witas::raw_input::RawInputEvent::Input(input) => {
                     println!("{:?}", input);
-                },
+                }
                 witas::raw_input::RawInputEvent::DeviceChange(dc) => {
                     println!("{:?}", dc);
-                },
+                }
                 witas::raw_input::RawInputEvent::Quit => break,
             }
         }
@@ -38,4 +38,3 @@ async fn main() {
         std::panic::resume_unwind(e);
     }
 }
-

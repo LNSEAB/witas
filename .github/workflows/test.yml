@@ -1,0 +1,35 @@
+name: Test
+
+on:
+  push:
+    branches-ignore:
+      - "release"
+      - "master"
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Load cache
+        uses: ./.github/actions/cache_cargo
+      - name: Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
+          components: rustfmt, clippy
+      - name: Clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+      - name: Format
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test

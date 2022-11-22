@@ -273,10 +273,7 @@ unsafe fn on_sizing(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
         WMSZ_BOTTOMRIGHT => ResizingEdge::BottomLRight,
         _ => unreachable!(),
     };
-    Context::send_event(hwnd, Event::Resizing(events::Resizing {
-        size,
-        edge,
-    }));
+    Context::send_event(hwnd, Event::Resizing(events::Resizing { size, edge }));
     DefWindowProcW(hwnd, WM_SIZING, wparam, lparam)
 }
 
@@ -288,20 +285,15 @@ unsafe fn on_size(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
         }
         SIZE_MAXIMIZED => {
             let size = lparam_to_size(lparam);
-            Context::send_event(hwnd, Event::Maximized(events::Maximized {
-                size,
-            }));
+            Context::send_event(hwnd, Event::Maximized(events::Maximized { size }));
             Context::set_window_property(hwnd, |props| props.maximized = true);
         }
         SIZE_RESTORED => {
-            let min_or_max = Context::get_window_property(hwnd, |props| {
-                props.minimized | props.maximized
-            });
+            let min_or_max =
+                Context::get_window_property(hwnd, |props| props.minimized | props.maximized);
             if min_or_max.unwrap_or(false) {
                 let size = lparam_to_size(lparam);
-                Context::send_event(hwnd, Event::Restored(events::Restored {
-                    size,
-                }));
+                Context::send_event(hwnd, Event::Restored(events::Restored { size }));
                 Context::set_window_property(hwnd, |props| {
                     props.minimized = false;
                     props.maximized = false;
@@ -316,18 +308,24 @@ unsafe fn on_size(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
 unsafe fn on_window_pos_changed(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     let pos = (lparam.0 as *const WINDOWPOS).as_ref().unwrap();
     if pos.flags.0 & SWP_NOMOVE.0 == 0 {
-        Context::send_event(hwnd, Event::Moved(events::Moved {
-            position: ScreenPosition::new(pos.x, pos.y),
-        }));
+        Context::send_event(
+            hwnd,
+            Event::Moved(events::Moved {
+                position: ScreenPosition::new(pos.x, pos.y),
+            }),
+        );
     }
     DefWindowProcW(hwnd, WM_WINDOWPOSCHANGED, wparam, lparam)
 }
 
 unsafe fn on_exit_size_move(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
     let size = get_client_rect(hwnd);
-    Context::send_event(hwnd, Event::Resized(events::Resized {
-        size: Size::new((size.right - size.left) as _, (size.bottom - size.top) as _),
-    }));
+    Context::send_event(
+        hwnd,
+        Event::Resized(events::Resized {
+            size: Size::new((size.right - size.left) as _, (size.bottom - size.top) as _),
+        }),
+    );
     DefWindowProcW(hwnd, WM_EXITSIZEMOVE, wparam, lparam)
 }
 

@@ -146,12 +146,12 @@ where
 
 impl<T, Coord> Rect<T, Coord>
 where
-    T: num::NumCast
+    T: num::NumCast,
 {
     #[inline]
-    pub fn cast<U>(self) -> Option<Rect<U, Coord>> 
+    pub fn cast<U>(self) -> Option<Rect<U, Coord>>
     where
-        U: num::NumCast
+        U: num::NumCast,
     {
         Some(Rect::new(
             self.position.cast::<U>()?,
@@ -252,9 +252,9 @@ where
     }
 }
 
-impl<T> ToLogical<T> for LogicalRect<T> 
+impl<T> ToLogical<T> for LogicalRect<T>
 where
-    T: Copy
+    T: Copy,
 {
     type Output<U> = LogicalRect<U>;
 
@@ -266,16 +266,13 @@ where
 
 impl<T> ToLogical<T> for PhysicalRect<T>
 where
-    T: num::Num + num::NumCast + Copy
+    T: num::Num + num::NumCast + Copy,
 {
     type Output<U> = LogicalRect<T>;
 
     #[inline]
     fn to_logical(&self, dpi: T) -> Self::Output<T> {
-        Rect::new(
-            self.position.to_logical(dpi),
-            self.size.to_logical(dpi),
-        )
+        Rect::new(self.position.to_logical(dpi), self.size.to_logical(dpi))
     }
 }
 
@@ -341,22 +338,19 @@ where
 
 impl<T> ToPhysical<T> for LogicalRect<T>
 where
-    T: num::Num + num::NumCast + Copy
+    T: num::Num + num::NumCast + Copy,
 {
     type Output<U> = PhysicalRect<U>;
 
     #[inline]
     fn to_physical(&self, dpi: T) -> Self::Output<T> {
-        Rect::new(
-            self.position.to_physical(dpi),
-            self.size.to_physical(dpi),
-        )
+        Rect::new(self.position.to_physical(dpi), self.size.to_physical(dpi))
     }
 }
 
-impl<T> ToPhysical<T> for PhysicalRect<T> 
+impl<T> ToPhysical<T> for PhysicalRect<T>
 where
-    T: Copy
+    T: Copy,
 {
     type Output<U> = PhysicalRect<U>;
 

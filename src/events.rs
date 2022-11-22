@@ -81,7 +81,6 @@ pub struct Maximized {
     pub size: PhysicalSize<u32>,
 }
 
-
 #[derive(Debug)]
 pub struct Restored {
     pub size: PhysicalSize<u32>,
