@@ -3,6 +3,12 @@ name = "witas"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
+description = "An asynchronous window library in Rust for Windows"
+authors = ["LNSEAB <691752+LNSEAB@users.noreply.github.com>"]
+repository = "https://github.com/LNSEAB/witas"
+documentation = "https://docs.rs/witas"
+keywords = ["gui", "windows"]
+categories = ["gui"]
 
 [features]
 coinit = ["dep:coinit"]
