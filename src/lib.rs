@@ -1,3 +1,5 @@
+//! An asynchronous window library in Rust for Windows
+
 mod context;
 mod device;
 pub mod events;
