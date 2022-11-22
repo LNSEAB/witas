@@ -114,7 +114,7 @@ static THREAD: OnceCell<Mutex<Thread>> = OnceCell::new();
 pub struct JoinHandle;
 
 impl std::future::Future for JoinHandle {
-    type Output = Result<(), Box<dyn std::any::Any + Send>>;
+    type Output = ::core::result::Result<(), Box<dyn std::any::Any + Send>>;
 
     fn poll(
         self: std::pin::Pin<&mut Self>,
