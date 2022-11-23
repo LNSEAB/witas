@@ -65,19 +65,17 @@ pub(crate) fn get_unwind() -> Option<Box<dyn Any + Send>> {
 }
 
 unsafe fn on_paint(hwnd: HWND) -> LRESULT {
-    if GetUpdateRect(hwnd, None, false).0 != 0 {
-        let mut rc = RECT::default();
-        GetUpdateRect(hwnd, Some(&mut rc), false);
-        let mut ps = PAINTSTRUCT::default();
-        let _hdc = BeginPaint(hwnd, &mut ps);
-        EndPaint(hwnd, &ps);
-        Context::send_event(
-            hwnd,
-            Event::Draw(events::Draw {
-                invalid_rect: rc.into(),
-            }),
-        );
-    }
+    let mut rc = RECT::default();
+    GetUpdateRect(hwnd, Some(&mut rc), false);
+    let mut ps = PAINTSTRUCT::default();
+    let _hdc = BeginPaint(hwnd, &mut ps);
+    EndPaint(hwnd, &ps);
+    Context::send_event(
+        hwnd,
+        Event::Draw(events::Draw {
+            invalid_rect: rc.into(),
+        }),
+    );
     LRESULT(0)
 }
 
