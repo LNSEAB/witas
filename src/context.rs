@@ -122,7 +122,7 @@ impl Context {
 
     pub fn window_is_closed(hwnd: HWND) -> bool {
         let ctx = CONTEXT.lock().unwrap();
-        ctx.window_map.contains_key(&hwnd.0)
+        !ctx.window_map.contains_key(&hwnd.0)
     }
 
     pub fn set_ui_thread_unwind(payload: Box<dyn Any + Send>) {
