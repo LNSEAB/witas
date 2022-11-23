@@ -357,7 +357,7 @@ impl RawInputEventRecevier {
     }
 }
 
-type BuildResult = anyhow::Result<(
+type BuildResult = Result<(
     HWND,
     mpsc::UnboundedReceiver<Event>,
     Option<mpsc::UnboundedReceiver<raw_input::RawInputEvent>>,
@@ -372,7 +372,7 @@ impl<Sz> std::future::Future for Build<Sz>
 where
     Sz: ToPhysical<u32, Output<u32> = PhysicalSize<u32>> + std::marker::Unpin + Send + 'static,
 {
-    type Output = anyhow::Result<(Window, EventReceiver)>;
+    type Output = Result<(Window, EventReceiver)>;
 
     fn poll(
         self: std::pin::Pin<&mut Self>,
@@ -403,6 +403,11 @@ where
                     GetModuleHandleW(None).unwrap(),
                     None,
                 );
+                if hwnd == HWND(0) {
+                    tx.send(Err(Error::from_win32())).unwrap_or(());
+                    waker.wake();
+                    return;
+                }
                 DragAcceptFiles(hwnd, builder.accept_drop_files);
                 let props = WindowProperties {
                     visible_ime_candidate_window: builder.visible_ime_candidate_window,
@@ -461,7 +466,7 @@ where
             })),
             Err(mpsc::error::TryRecvError::Empty) => std::task::Poll::Pending,
             Err(mpsc::error::TryRecvError::Disconnected) => {
-                std::task::Poll::Ready(Err(anyhow::anyhow!("disconnected")))
+                std::task::Poll::Ready(Err(Error::UiThreadClosed))
             }
         }
     }

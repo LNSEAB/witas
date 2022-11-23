@@ -85,8 +85,8 @@ impl Device {
     }
 
     #[inline]
-    pub fn get_info(&self) -> windows::core::Result<DeviceInfo> {
-        unsafe { get_device_info(self.handle.0) }
+    pub fn get_info(&self) -> Result<DeviceInfo> {
+        unsafe { get_device_info(self.handle.0).map_err(|e| e.into()) }
     }
 }
 
@@ -490,7 +490,7 @@ unsafe fn get_device_info(handle: HANDLE) -> windows::core::Result<DeviceInfo> {
     Ok(data)
 }
 
-pub fn get_device_list() -> windows::core::Result<Vec<Device>> {
+pub fn get_device_list() -> Result<Vec<Device>> {
     unsafe {
         let mut len = 0;
         let ret = GetRawInputDeviceList(
@@ -499,7 +499,7 @@ pub fn get_device_list() -> windows::core::Result<Vec<Device>> {
             std::mem::size_of::<RAWINPUTDEVICELIST>() as _,
         );
         if (ret as i32) == -1 {
-            return Err(windows::core::Error::from_win32());
+            return Err(Error::from_win32());
         }
         let mut devices = vec![RAWINPUTDEVICELIST::default(); len as usize];
         let ret = GetRawInputDeviceList(
@@ -508,7 +508,7 @@ pub fn get_device_list() -> windows::core::Result<Vec<Device>> {
             std::mem::size_of::<RAWINPUTDEVICELIST>() as _,
         );
         if (ret as i32) == -1 {
-            return Err(windows::core::Error::from_win32());
+            return Err(Error::from_win32());
         }
         let devices = devices
             .iter()
@@ -562,7 +562,7 @@ thread_local! {
     static GAMEPADS: RefCell<Vec<GamePadObject>> = RefCell::new(vec![]);
 }
 
-pub(crate) fn register_devices(hwnd: HWND, state: WindowState) -> windows::core::Result<()> {
+pub(crate) fn register_devices(hwnd: HWND, state: WindowState) -> Result<()> {
     let flags = RIDEV_DEVNOTIFY
         | if state == WindowState::Background {
             RIDEV_INPUTSINK
@@ -598,7 +598,7 @@ pub(crate) fn register_devices(hwnd: HWND, state: WindowState) -> windows::core:
     unsafe {
         let ret = RegisterRawInputDevices(&devices, std::mem::size_of::<RAWINPUTDEVICE>() as _);
         if !ret.as_bool() {
-            return Err(windows::core::Error::from_win32());
+            return Err(Error::from_win32());
         }
         let device_list = get_device_list()?;
         GAMEPADS.with(|gamepads| {
