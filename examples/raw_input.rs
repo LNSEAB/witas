@@ -34,7 +34,4 @@ async fn main() {
         }
     }
     th.await.unwrap();
-    if let Err(e) = witas::UiThread::join().await {
-        std::panic::resume_unwind(e);
-    }
 }

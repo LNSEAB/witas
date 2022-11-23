@@ -13,7 +13,4 @@ async fn main() {
             break;
         }
     }
-    if let Err(e) = witas::UiThread::join().await {
-        std::panic::resume_unwind(e);
-    }
 }

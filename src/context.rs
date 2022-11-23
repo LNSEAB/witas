@@ -1,6 +1,5 @@
 use crate::window::WindowProperties;
 use crate::*;
-use std::any::Any;
 use std::collections::HashMap;
 use std::sync::Mutex;
 use std::task::Waker;
@@ -17,7 +16,6 @@ pub(crate) struct Object {
 
 pub(crate) struct Context {
     window_map: HashMap<isize, Object>,
-    ui_thread_unwind: Option<Box<dyn Any + Send>>,
 }
 
 static CONTEXT: once_cell::sync::Lazy<Mutex<Context>> =
@@ -27,7 +25,6 @@ impl Context {
     fn new() -> Self {
         Self {
             window_map: HashMap::new(),
-            ui_thread_unwind: None,
         }
     }
 
@@ -123,15 +120,5 @@ impl Context {
     pub fn window_is_closed(hwnd: HWND) -> bool {
         let ctx = CONTEXT.lock().unwrap();
         !ctx.window_map.contains_key(&hwnd.0)
-    }
-
-    pub fn set_ui_thread_unwind(payload: Box<dyn Any + Send>) {
-        let mut ctx = CONTEXT.lock().unwrap();
-        ctx.ui_thread_unwind = Some(payload);
-    }
-
-    pub fn get_ui_thread_unwind() -> Option<Box<dyn Any + Send>> {
-        let mut ctx = CONTEXT.lock().unwrap();
-        ctx.ui_thread_unwind.take()
     }
 }
