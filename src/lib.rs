@@ -13,6 +13,7 @@ mod utility;
 mod window;
 
 #[cfg(feature = "dialog")]
+#[cfg_attr(docsrs, doc(cfg(feature = "dialog")))]
 pub mod dialog;
 
 use context::Context;
@@ -26,6 +27,7 @@ pub use ui_thread::UiThread;
 pub use window::{EventReceiver, Window, WindowBuilder, WindowStyle};
 
 #[cfg(feature = "dialog")]
+#[doc(inline)]
 pub use dialog::{FileDialogOptions, FileOpenDialog, FileSaveDialog, FilterSpec};
 
 #[inline]
