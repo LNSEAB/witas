@@ -4,6 +4,8 @@ pub enum Error {
     Api(windows::core::Error),
     #[error("ui thread closed")]
     UiThreadClosed,
+    #[error("{0}")]
+    Io(std::io::Error),
 }
 
 impl Error {
@@ -15,6 +17,12 @@ impl Error {
 impl From<windows::core::Error> for Error {
     fn from(src: windows::core::Error) -> Self {
         Self::Api(src)
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(src: std::io::Error) -> Self {
+        Self::Io(src)
     }
 }
 

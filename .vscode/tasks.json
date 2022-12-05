@@ -32,6 +32,22 @@
 				"$rustc"
 			],
 			"group": "build"
+		},
+		{
+			"label": "build dialog",
+			"type": "shell",
+			"command": "cargo.exe",
+			"args": ["build", "--example", "dialog", "--features", "dialog"],
+			"options": {
+				"shell": {
+					"executable": "pwsh.exe",
+					"args": ["-Nologo", "-c"]
+				}
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build"
 		}
 	]
 }
