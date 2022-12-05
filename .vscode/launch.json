@@ -24,6 +24,18 @@
             "environment": [],
             "preLaunchTask": "build raw_input",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "dialog",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/examples/dialog.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "preLaunchTask": "build dialog",
+            "console": "integratedTerminal"
         }
     ]
 }

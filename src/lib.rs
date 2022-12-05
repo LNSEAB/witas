@@ -12,6 +12,9 @@ mod ui_thread;
 mod utility;
 mod window;
 
+#[cfg(feature = "dialog")]
+pub mod dialog;
+
 use context::Context;
 
 pub use device::*;
@@ -21,6 +24,9 @@ pub use events::{Event, ResizingEdge};
 pub use geometry::*;
 pub use ui_thread::UiThread;
 pub use window::{EventReceiver, Window, WindowBuilder, WindowStyle};
+
+#[cfg(feature = "dialog")]
+pub use dialog::{FileDialogOptions, FileOpenDialog, FileSaveDialog, FilterSpec};
 
 #[inline]
 pub fn init() {
