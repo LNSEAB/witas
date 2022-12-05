@@ -1,4 +1,4 @@
-name: Test
+name: Checks
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - "master"
 
 jobs:
-  test:
+  checks:
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -15,22 +15,14 @@ jobs:
       - name: Load cache
         uses: ./.github/actions/cache_cargo
       - name: Toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           target: x86_64-pc-windows-msvc
           components: rustfmt, clippy
       - name: Clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
+        run: cargo clippy
       - name: Format
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
       - name: Test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test 
-          args: --all-features
+        run: cargo test --all-features
