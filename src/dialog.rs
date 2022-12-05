@@ -1,12 +1,12 @@
 use crate::*;
 use std::path::PathBuf;
 use tokio::sync::oneshot;
-use windows::core::{Interface, HSTRING, PWSTR, PCWSTR};
+use windows::core::{Interface, HSTRING, PCWSTR, PWSTR};
 use windows::Win32::{
     Foundation::{ERROR_CANCELLED, E_FAIL, HWND},
     System::Com::*,
-    UI::Shell::*,
     UI::Shell::Common::*,
+    UI::Shell::*,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -273,12 +273,13 @@ where
                 .iter()
                 .map(|ft| (HSTRING::from(&ft.name), HSTRING::from(&ft.spec)))
                 .collect::<Vec<_>>();
-            let file_types = buffer.iter().map(|(name, spec)| {
-                COMDLG_FILTERSPEC {
+            let file_types = buffer
+                .iter()
+                .map(|(name, spec)| COMDLG_FILTERSPEC {
                     pszName: PCWSTR(name.as_ptr()),
                     pszSpec: PCWSTR(spec.as_ptr()),
-                }
-            }).collect::<Vec<_>>();
+                })
+                .collect::<Vec<_>>();
             dialog.SetFileTypes(&file_types)?;
             dialog.SetFileTypeIndex(params.file_type_index as _)?;
         }
@@ -411,12 +412,12 @@ impl FileSaveDialog {
     #[inline]
     pub fn new() -> Self {
         Self {
-            params: FileDialogParams{
+            params: FileDialogParams {
                 options: FileDialogOptions::PATH_MUST_EXIST
                     | FileDialogOptions::NO_READONLY_RETURN
                     | FileDialogOptions::OVERWRITE_PROMPT,
                 ..Default::default()
-            }
+            },
         }
     }
 
