@@ -17,6 +17,10 @@ use windows::Win32::{
     UI::WindowsAndMessaging::*,
 };
 
+fn loword(x: i32) -> i16 {
+    (x & 0xffff) as _
+}
+
 fn hiword(x: i32) -> i16 {
     ((x >> 16) & 0xffff) as _
 }
@@ -107,6 +111,15 @@ unsafe fn on_mouse_move(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
             }),
         );
     }
+
+    LRESULT(0)
+}
+
+unsafe fn on_set_cursor(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
+    if loword(lparam.0 as _) != HTCLIENT as _ {
+        return DefWindowProcW(hwnd, WM_SETCURSOR, wparam, lparam);
+    }
+    Context::get_window_property(hwnd, |props| props.cursor.set());
     LRESULT(0)
 }
 
@@ -437,6 +450,7 @@ pub(crate) extern "system" fn window_proc(
             WM_INPUT => raw_input::on_input(hwnd, wparam, lparam),
             WM_PAINT => on_paint(hwnd),
             WM_MOUSEMOVE => on_mouse_move(hwnd, wparam, lparam),
+            WM_SETCURSOR => on_set_cursor(hwnd, wparam, lparam),
             WM_MOUSELEAVE => on_mouse_leave(hwnd, wparam, lparam),
             WM_LBUTTONDOWN => on_mouse_input(
                 hwnd,

@@ -48,6 +48,55 @@
 				"$rustc"
 			],
 			"group": "build"
+		},
+		{
+			"label": "build icon",
+			"type": "shell",
+			"command": "cargo.exe",
+			"args": ["build", "--example", "icon"],
+			"options": {
+				"shell": {
+					"executable": "pwsh.exe",
+					"args": ["-Nologo", "-c"]
+				}
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build icon_resource",
+			"type": "shell",
+			"command": "cargo.exe",
+			"args": ["build"],
+			"options": {
+				"cwd": "${workspaceFolder}/examples/icon_resource",
+				"shell": {
+					"executable": "pwsh.exe",
+					"args": ["-Nologo", "-c"]
+				}
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build"
+		},
+		{
+			"label": "build cursor",
+			"type": "shell",
+			"command": "cargo.exe",
+			"args": ["build", "--example", "cursor"],
+			"options": {
+				"shell": {
+					"executable": "pwsh.exe",
+					"args": ["-Nologo", "-c"]
+				}
+			},
+			"problemMatcher": [
+				"$rustc"
+			],
+			"group": "build"
 		}
 	]
 }

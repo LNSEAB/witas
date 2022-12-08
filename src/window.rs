@@ -13,10 +13,10 @@ use windows::Win32::{
     UI::Shell::DragAcceptFiles,
     UI::WindowsAndMessaging::{
         CreateWindowExW, LoadCursorW, PostMessageW, RegisterClassExW, ShowWindow, ShowWindowAsync,
-        CS_HREDRAW, CS_VREDRAW, IDC_ARROW, SW_HIDE, SW_MINIMIZE, SW_RESTORE, SW_SHOW,
-        SW_SHOWMAXIMIZED, WINDOW_EX_STYLE, WINDOW_STYLE, WM_CLOSE, WNDCLASSEXW, WS_CAPTION,
-        WS_MAXIMIZEBOX, WS_MINIMIZEBOX, WS_OVERLAPPED, WS_OVERLAPPEDWINDOW, WS_POPUP, WS_SYSMENU,
-        WS_THICKFRAME,
+        CS_HREDRAW, CS_VREDRAW, ICON_BIG, ICON_SMALL, IDC_ARROW, SW_HIDE, SW_MINIMIZE, SW_RESTORE,
+        SW_SHOW, SW_SHOWMAXIMIZED, WINDOW_EX_STYLE, WINDOW_STYLE, WM_CLOSE, WM_SETICON,
+        WNDCLASSEXW, WS_CAPTION, WS_MAXIMIZEBOX, WS_MINIMIZEBOX, WS_OVERLAPPED,
+        WS_OVERLAPPEDWINDOW, WS_POPUP, WS_SYSMENU, WS_THICKFRAME,
     },
 };
 
@@ -60,6 +60,7 @@ pub(crate) struct WindowProperties {
     pub imm_context: ime::ImmContext,
     pub minimized: bool,
     pub maximized: bool,
+    pub cursor: Cursor,
 }
 
 pub trait Style {
@@ -165,6 +166,7 @@ pub struct WindowBuilder<Title = (), Sz = ()> {
     visible_ime_candidate_window: bool,
     accept_drop_files: bool,
     enable_raw_input: bool,
+    icon: Option<Icon>,
 }
 
 impl WindowBuilder<(), ()> {
@@ -179,6 +181,7 @@ impl WindowBuilder<(), ()> {
             visible_ime_candidate_window: true,
             accept_drop_files: false,
             enable_raw_input: false,
+            icon: None,
         }
     }
 }
@@ -196,6 +199,7 @@ impl<Title, Sz> WindowBuilder<Title, Sz> {
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             accept_drop_files: self.accept_drop_files,
             enable_raw_input: self.enable_raw_input,
+            icon: self.icon,
         }
     }
 
@@ -220,6 +224,7 @@ impl<Title, Sz> WindowBuilder<Title, Sz> {
             visible_ime_candidate_window: self.visible_ime_candidate_window,
             accept_drop_files: self.accept_drop_files,
             enable_raw_input: self.enable_raw_input,
+            icon: self.icon,
         }
     }
 
@@ -256,6 +261,12 @@ impl<Title, Sz> WindowBuilder<Title, Sz> {
     #[inline]
     pub fn enable_raw_input(mut self, enable: bool) -> Self {
         self.enable_raw_input = enable;
+        self
+    }
+
+    #[inline]
+    pub fn icon(mut self, icon: Icon) -> Self {
+        self.icon = Some(icon);
         self
     }
 }
@@ -389,6 +400,7 @@ where
                 let style = builder.style.style();
                 let ex_style = builder.style.ex_style();
                 let rc = adjust_window_rect(size, style, false, ex_style, dpi);
+                let hinst = GetModuleHandleW(None).unwrap();
                 let hwnd = CreateWindowExW(
                     ex_style,
                     WINDOW_CLASS_NAME,
@@ -400,7 +412,7 @@ where
                     rc.bottom - rc.top,
                     None,
                     None,
-                    GetModuleHandleW(None).unwrap(),
+                    hinst,
                     None,
                 );
                 if hwnd == HWND(0) {
@@ -414,11 +426,25 @@ where
                     imm_context: ime::ImmContext::new(hwnd),
                     minimized: false,
                     maximized: false,
+                    cursor: Cursor::default(),
                 };
                 if builder.enable_ime {
                     props.imm_context.enable();
                 } else {
                     props.imm_context.disable();
+                }
+                if let Some(icon) = builder.icon {
+                    if let Ok(big) = load_icon(&icon, hinst) {
+                        PostMessageW(hwnd, WM_SETICON, WPARAM(ICON_BIG as _), LPARAM(big.0 as _));
+                    }
+                    if let Ok(small) = load_small_icon(&icon, hinst) {
+                        PostMessageW(
+                            hwnd,
+                            WM_SETICON,
+                            WPARAM(ICON_SMALL as _),
+                            LPARAM(small.0 as _),
+                        );
+                    }
                 }
                 let (event_rx, raw_input_event_rx) = {
                     let (event_tx, event_rx) = mpsc::unbounded_channel();
@@ -585,6 +611,17 @@ impl Window {
                     props.imm_context.disable();
                 }
             });
+        });
+    }
+
+    #[inline]
+    pub fn set_cursor(&self, cursor: Cursor) {
+        let hwnd = self.hwnd;
+        UiThread::send_task(move || {
+            Context::set_window_property(hwnd, |props| {
+                props.cursor = cursor;
+                props.cursor.set();
+            })
         });
     }
 
