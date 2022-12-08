@@ -111,7 +111,7 @@ unsafe fn on_mouse_move(hwnd: HWND, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
             }),
         );
     }
-    
+
     LRESULT(0)
 }
 

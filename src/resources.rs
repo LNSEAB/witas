@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use windows::core::{HSTRING, PCWSTR};
 use windows::Win32::{Foundation::*, UI::WindowsAndMessaging::*};
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Icon {
     Resource(u16),
     File(PathBuf),

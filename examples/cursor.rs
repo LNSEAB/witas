@@ -20,8 +20,7 @@ async fn main() {
                 window.set_cursor(cursor);
             }
             witas::Event::Quit => break,
-            _ => {},
+            _ => {}
         }
     }
 }
-
