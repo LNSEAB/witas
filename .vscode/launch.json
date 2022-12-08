@@ -36,6 +36,42 @@
             "environment": [],
             "preLaunchTask": "build dialog",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "icon",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/examples/icon.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "preLaunchTask": "build icon",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "icon_resource",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/examples/icon_resource/target/debug/witas_icon_resource.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "preLaunchTask": "build icon_resource",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "cursor",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/debug/examples/cursor.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "preLaunchTask": "build cursor",
+            "console": "integratedTerminal"
         }
     ]
 }

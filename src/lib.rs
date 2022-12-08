@@ -11,6 +11,7 @@ pub mod raw_input;
 mod ui_thread;
 mod utility;
 mod window;
+mod resources;
 
 #[cfg(feature = "dialog")]
 #[cfg_attr(docsrs, doc(cfg(feature = "dialog")))]
@@ -25,6 +26,7 @@ pub use events::{Event, ResizingEdge};
 pub use geometry::*;
 pub use ui_thread::UiThread;
 pub use window::{EventReceiver, Window, WindowBuilder, WindowStyle};
+pub use resources::*;
 
 #[cfg(feature = "dialog")]
 #[doc(inline)]
