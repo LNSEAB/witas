@@ -12,14 +12,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-      - name: Load cache
-        uses: ./.github/actions/cache_cargo
       - name: Toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           target: x86_64-pc-windows-msvc
           components: rustfmt, clippy
+      - name: Generate Cargo.lock
+        run: cargo generate-lockfile
+      - name: Load cache
+        uses: ./.github/actions/cache_cargo
       - name: Clippy
         run: cargo clippy
       - name: Format
