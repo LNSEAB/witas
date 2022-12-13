@@ -1,4 +1,5 @@
 #[derive(Debug, thiserror::Error)]
+#[non_exhaustive]
 pub enum Error {
     #[error("{0}")]
     Api(windows::core::Error),
