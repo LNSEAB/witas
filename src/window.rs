@@ -286,7 +286,7 @@ where
 
 impl<Sz> std::future::IntoFuture for WindowBuilder<String, Sz>
 where
-    Sz: ToPhysical<u32, Output<u32> = PhysicalSize<u32>> + 'static + Send + Unpin
+    Sz: ToPhysical<u32, Output<u32> = PhysicalSize<u32>> + 'static + Send + Unpin,
 {
     type Output = Result<(Window, EventReceiver)>;
     type IntoFuture = Build<Sz>;
