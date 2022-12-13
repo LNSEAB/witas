@@ -3,7 +3,6 @@ async fn main() {
     let (window, mut rx) = witas::Window::builder()
         .title("witas cursor")
         .inner_size(witas::LogicalSize::new(640, 480))
-        .build()
         .await
         .unwrap();
     loop {

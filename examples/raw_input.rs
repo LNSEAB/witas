@@ -4,7 +4,6 @@ async fn main() {
         .title("witas raw_input")
         .inner_size(witas::LogicalSize::new(640, 480))
         .enable_raw_input(true)
-        .build()
         .await
         .unwrap();
     let mut raw_input = rx.take_raw_input_receiver().unwrap();

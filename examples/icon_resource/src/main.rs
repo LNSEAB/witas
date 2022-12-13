@@ -4,7 +4,6 @@ async fn main() {
         .title("witas icon_resource")
         .inner_size(witas::LogicalSize::new(640, 480))
         .icon(witas::Icon::Resource(111))
-        .build()
         .await
         .unwrap();
     loop {
