@@ -358,6 +358,15 @@ impl EventReceiver {
     }
 
     #[inline]
+    pub fn try_recv(&mut self) -> Result<Option<Event>> {
+        match self.rx.try_recv() {
+            Ok(event) => Ok(Some(event)),
+            Err(mpsc::error::TryRecvError::Empty) => Ok(None),
+            Err(mpsc::error::TryRecvError::Disconnected) => Err(Error::UiThreadClosed),
+        }
+    }
+
+    #[inline]
     pub fn take_raw_input_receiver(&mut self) -> Option<RawInputEventRecevier> {
         self.raw_input_rx.take().map(|rx| RawInputEventRecevier {
             hwnd: self.hwnd,
@@ -377,6 +386,15 @@ impl RawInputEventRecevier {
         Recv {
             hwnd: self.hwnd,
             rx: &mut self.rx,
+        }
+    }
+
+    #[inline]
+    pub fn try_recv(&mut self) -> Result<Option<raw_input::RawInputEvent>> {
+        match self.rx.try_recv() {
+            Ok(event) => Ok(Some(event)),
+            Err(mpsc::error::TryRecvError::Empty) => Ok(None),
+            Err(mpsc::error::TryRecvError::Disconnected) => Err(Error::UiThreadClosed),
         }
     }
 }
