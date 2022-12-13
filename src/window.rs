@@ -284,6 +284,19 @@ where
     }
 }
 
+impl<Sz> std::future::IntoFuture for WindowBuilder<String, Sz>
+where
+    Sz: ToPhysical<u32, Output<u32> = PhysicalSize<u32>> + 'static + Send + Unpin
+{
+    type Output = Result<(Window, EventReceiver)>;
+    type IntoFuture = Build<Sz>;
+
+    #[inline]
+    fn into_future(self) -> Self::IntoFuture {
+        self.build()
+    }
+}
+
 pub struct Recv<'a, T> {
     hwnd: HWND,
     rx: &'a mut mpsc::UnboundedReceiver<T>,
