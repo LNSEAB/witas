@@ -11,19 +11,18 @@ async fn main() {
             witas::Event::KeyInput(input) if input.key_state == witas::KeyState::Pressed => {
                 match input.key_code.vkey {
                     witas::VirtualKey::O => {
-                        let path = witas::FileOpenDialog::new().show().await.unwrap();
+                        let path = witas::FileOpenDialog::new().await.unwrap();
                         println!("Open: {:?}", path);
                     }
                     witas::VirtualKey::M => {
                         let paths = witas::FileOpenDialog::new()
                             .allow_multi_select()
-                            .show()
                             .await
                             .unwrap();
                         println!("Open(Multi): {:?}", paths);
                     }
                     witas::VirtualKey::S => {
-                        let path = witas::FileSaveDialog::new().show().await.unwrap();
+                        let path = witas::FileSaveDialog::new().await.unwrap();
                         println!("Save: {:?}", path);
                     }
                     _ => {}
