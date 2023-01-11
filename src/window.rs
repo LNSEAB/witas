@@ -175,7 +175,7 @@ impl WindowBuilder<(), ()> {
             title: (),
             position: (0, 0).into(),
             size: (),
-            style: Box::new(WindowStyle::default()),
+            style: Box::<WindowStyle>::default(),
             visibility: true,
             enable_ime: true,
             visible_ime_candidate_window: true,

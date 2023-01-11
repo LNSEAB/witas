@@ -408,9 +408,9 @@ where
     }
 }
 
-impl<T> IntoFuture for FileOpenDialog<T> 
+impl<T> IntoFuture for FileOpenDialog<T>
 where
-    T: OpenDialogResult + 'static
+    T: OpenDialogResult + 'static,
 {
     type Output = Result<Option<T>>;
     type IntoFuture = Pin<Box<dyn Future<Output = Self::Output>>>;
