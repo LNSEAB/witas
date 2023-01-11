@@ -1,5 +1,9 @@
 use crate::*;
-use std::path::PathBuf;
+use std::{
+    future::{Future, IntoFuture},
+    path::PathBuf,
+    pin::Pin,
+};
 use tokio::sync::oneshot;
 use windows::core::{Interface, HSTRING, PCWSTR, PWSTR};
 use windows::Win32::{
@@ -404,6 +408,19 @@ where
     }
 }
 
+impl<T> IntoFuture for FileOpenDialog<T>
+where
+    T: OpenDialogResult + 'static,
+{
+    type Output = Result<Option<T>>;
+    type IntoFuture = Pin<Box<dyn Future<Output = Self::Output>>>;
+
+    #[inline]
+    fn into_future(self) -> Self::IntoFuture {
+        Box::pin(self.show())
+    }
+}
+
 pub struct FileSaveDialog {
     params: FileDialogParams,
 }
@@ -519,5 +536,15 @@ impl FileSaveDialog {
             },
             Err(_) => Err(Error::UiThreadClosed),
         }
+    }
+}
+
+impl IntoFuture for FileSaveDialog {
+    type Output = Result<Option<PathBuf>>;
+    type IntoFuture = Pin<Box<dyn Future<Output = Self::Output>>>;
+
+    #[inline]
+    fn into_future(self) -> Self::IntoFuture {
+        Box::pin(self.show())
     }
 }
